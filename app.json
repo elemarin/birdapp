@@ -1,15 +1,19 @@
 {
   "expo": {
-    "name": "birdapp",
+    "name": "Birdsong",
     "slug": "birdapp",
-    "version": "1.0.0",
+    "scheme": "birdsong",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.elemarin.birdsong"
     },
     "android": {
+      "package": "com.elemarin.birdsong",
+      "versionCode": 2,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,6 +24,32 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "react-native-audio-api",
+        {
+          "iosBackgroundMode": false,
+          "iosMicrophonePermission": "Birdsong listens to identify the birds around you. Audio never leaves your phone.",
+          "androidPermissions": [
+            "android.permission.RECORD_AUDIO"
+          ],
+          "androidForegroundService": false
+        }
+      ],
+      "react-native-fast-tflite",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Birdsong uses your location to focus on birds likely in your area. It works offline."
+        }
+      ],
+      "expo-build-properties",
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": true
     }
   }
 }
