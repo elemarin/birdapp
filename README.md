@@ -4,6 +4,22 @@ Identifies birds by their song, on-device and offline.
 
 The app listens in 3-second windows and gets a new prediction every second. The BirdNET location model narrows results to the species expected at your GPS location and week.
 
+## Sessions, history, and profile
+
+The bottom tabs are **Listen**, **History**, and **Profile**. Start a session with the microphone. Up to three recent bird bubbles appear around it; tap one for details. Stop the microphone to end the session. Sessions with encounters open a summary; empty sessions end without adding a history entry.
+
+History stores sessions and encounters in local SQLite, across restarts and app updates. Each session has species totals, encounter counts, best confidence, a timeline, duration, and actual listening time. **All birds** searches the lifetime collection. A match after a gap of more than four seconds, or after resuming, starts another encounter. Encounters are audio matches, not confirmed sightings or counts of individual birds.
+
+Changing tabs does not stop listening. Leaving the app pauses recording; return to resume or end the session. On an unexpected app exit, the next launch restores the session as interrupted. Listening time is checkpointed every five seconds, so an abrupt process termination may lose the last few seconds; the app never counts time while it was closed.
+
+Profile stores a display name, preset avatar, language, GPS-trail preference, and local-species-filter preference on this device. Choose System, Español, or English. Spanish bird names currently use scientific names because a verified Spanish common-name dataset is not bundled. There are no accounts, backend, sync, or uploads. Uninstalling the app or clearing its data removes local history.
+
+### Optional GPS trail
+
+Enable the trail in Profile before starting a session and grant foreground location access. The app samples while actively listening, not while paused or in the background. Encounters may include the latest fix, its accuracy, and timestamp. Only fixes at most 60 seconds old with reported accuracy within 100 metres are used; location failure does not stop identification.
+
+The summary draws an offline route trace with encounter markers, not a street map. Pauses and GPS gaps are not connected. GPS coordinates are approximate; no online place-name lookup or map tiles are requested. No audio is automatically saved with sessions.
+
 ## Run on Android
 
 Plug in your phone with USB debugging enabled, then run:
@@ -44,11 +60,9 @@ The location chip shows GPS coordinates and expected species when the local filt
 
 For an Android emulator, enable **Virtual microphone uses host audio input** in its extended microphone controls, or run `adb emu avd hostmicon`. Verify changing levels and replay before testing bird identification. If a recording is from another region, turn off the location filter. A real phone is a better field test.
 
-## Your birds
+## Bird details
 
-The compact listening bar leaves space for a grid of bird stickers above Audio check. Tap a bird to open a bottom sheet with its common and scientific names, best model confidence, encounter count, and first/last heard times. Drag the sheet up for more room or down to dismiss it. Listening continues while you browse details. An encounter is a match after a gap of more than 4 seconds, not a count of individual birds.
-
-These details work offline. The collection stays in memory until cleared or the app closes; it is not a saved life list. Stickers are decorative, not species illustrations. The optional Wikipedia link opens a website and needs internet; the app does not fetch species facts or photos.
+Bird bubbles and History entries open a bottom sheet with names, best confidence, encounter count, and first/latest heard times. Details work offline. Stickers are decorative, not species illustrations. The optional Wikipedia link opens a website and needs internet; the app does not fetch species facts or photos.
 
 Species facts can be bundled in a future offline field guide. Before collecting any, choose a source that permits redistribution, retain its license and attribution, and check image licenses separately. No scraped content is included in this version.
 
@@ -57,9 +71,11 @@ Species facts can be bundled in a future offline field guide. Before collecting 
 - `src/app/`: screens (Expo Router)
 - `src/hooks/useBirdListener.ts`: mic stream, rolling window, inference, detections
 - `src/hooks/useLocationFilter.ts`: offline GPS and the location species filter
+- `src/data/`: SQLite repository, session/encounter rules, route projection
+- `src/i18n/`: English and Spanish UI strings
 - `src/birdnet/`: model loading and labels
 - `assets/models/`: BirdNET v2.4 audio (FP16) and meta models
 
 ## Credits
 
-[BirdNET](https://github.com/birdnet-team/BirdNET-Analyzer) is by the K. Lisa Yang Center for Conservation Bioacoustics at the Cornell Lab of Ornithology, and Chemnitz University of Technology. The models are licensed CC BY-NC-SA 4.0, so non-commercial use only.
+[BirdNET](https://github.com/birdnet-team/BirdNET-Analyzer) is by the K. Lisa Yang Center for Conservation Bioacoustics at the Cornell Lab of Ornithology, and Chemnitz University of Technology. The models are licensed [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/), so non-commercial use only. The repository's code license does not replace this model license.

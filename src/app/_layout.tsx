@@ -2,14 +2,16 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { BirdSessionProvider } from '@/hooks/useBirdSession';
+import { LocalDataProvider } from '@/hooks/useLocalData';
 import { colors } from '@/theme';
 
 export default function RootLayout() {
   return (
-    <BirdSessionProvider>
+    <LocalDataProvider><BirdSessionProvider>
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="session/[id]" />
         <Stack.Screen
           name="bird/[id]"
           options={{
@@ -21,6 +23,6 @@ export default function RootLayout() {
           }}
         />
       </Stack>
-    </BirdSessionProvider>
+    </BirdSessionProvider></LocalDataProvider>
   );
 }

@@ -3,30 +3,34 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { LocationState } from '@/hooks/useLocationFilter';
 import { colors } from '@/theme';
+import { useTranslation } from '@/i18n';
 
 type Props = { state: LocationState; enabled: boolean; onToggle: () => void; onRetry: () => void };
 
 export function LocationChip({ state, enabled, onToggle, onRetry }: Props) {
+  const { t, errorText } = useTranslation();
   const local = state.status === 'ready' && enabled;
   const [icon, label] =
-    state.status === 'locating'
-      ? (['locate-outline', 'Finding your location…'] as const)
+    !enabled ? (['earth', `${t('allSpecies')} · ${t('tapLocal')}`] as const)
+    : state.status === 'locating'
+      ? (['locate-outline', t('locating')] as const)
       : state.status === 'ready'
         ? enabled
           ? (['location', state.coordinates] as const)
-          : (['earth', 'All species · tap for local only'] as const)
-        : (['alert-circle-outline', 'All species · location unavailable'] as const);
-  const detail = state.status === 'ready' && enabled
-    ? `${state.speciesCount} species expected here · tap for all species`
-    : state.status === 'denied' || state.status === 'unavailable' ? state.message : null;
+          : (['earth', `${t('allSpecies')} · ${t('tapLocal')}`] as const)
+        : (['alert-circle-outline', t('locationUnavailable')] as const);
+  const detail = !enabled ? null : state.status === 'ready'
+    ? `${t('localSpecies', { count: state.speciesCount })} · ${t('tapAll')}`
+    : state.status === 'denied' ? t(state.canAskAgain ? 'permissionDenied' : 'locationSettings')
+      : state.status === 'unavailable' ? errorText(state.message) : null;
 
   return (
     <Pressable
-      onPress={state.status === 'ready' ? onToggle : onRetry}
-      disabled={state.status === 'locating'}
+      onPress={!enabled || state.status === 'ready' ? onToggle : onRetry}
+      disabled={enabled && state.status === 'locating'}
       accessibilityRole="button"
       accessibilityLabel={[label, detail].filter(Boolean).join('. ')}
-      accessibilityState={{ disabled: state.status === 'locating' }}
+      accessibilityState={{ disabled: enabled && state.status === 'locating' }}
       style={({ pressed }) => [styles.chip, local && styles.chipLocal, pressed && { opacity: 0.7 }]}
     >
       <Ionicons name={icon} size={14} color={local ? colors.accent : colors.muted} />

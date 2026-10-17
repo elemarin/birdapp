@@ -50,9 +50,8 @@ async function findLocalSpecies(): Promise<LocationState> {
   }
 }
 
-export function useLocationFilter() {
+export function useLocationFilter(enabled = true) {
   const [state, setState] = useState<LocationState>({ status: 'locating' });
-  const [enabled, setEnabled] = useState(true);
   const generation = useRef(0);
   const locating = useRef(false);
 
@@ -71,9 +70,9 @@ export function useLocationFilter() {
 
   const cancel = useCallback(() => { generation.current++; locating.current = false; }, []);
   useEffect(() => {
-    void locate();
+    if (enabled) void locate();
     return cancel;
-  }, [cancel, locate]);
+  }, [cancel, enabled, locate]);
 
   const retry = useCallback(() => {
     if (state.status === 'denied' && !state.canAskAgain) {
@@ -87,5 +86,5 @@ export function useLocationFilter() {
   }, [locate, state]);
 
   const scores = enabled && state.status === 'ready' ? state.scores : null;
-  return { state, enabled, setEnabled, scores, retry };
+  return { state, enabled, scores, retry };
 }

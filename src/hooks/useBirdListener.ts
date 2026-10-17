@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { AudioManager, AudioRecorder } from 'react-native-audio-api';
 import { useSharedValue } from 'react-native-reanimated';
@@ -45,7 +45,13 @@ function emptyDiagnostics(): AudioDiagnostics {
   };
 }
 
-export function useBirdListener(locationScores: Float32Array | null) {
+type ListenerEvents = {
+  onMatches?: (matches: { species: Species; confidence: number }[], at: number) => void;
+  onStarted?: () => Promise<void>;
+  onStopped?: () => void;
+};
+
+export function useBirdListener(locationScores: Float32Array | null, events: ListenerEvents = {}) {
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
   const [pauseReason, setPauseReason] = useState<string | null>(null);
@@ -67,6 +73,8 @@ export function useBirdListener(locationScores: Float32Array | null) {
   const scores = useRef(locationScores);
   const stats = useRef(emptyDiagnostics());
   const timing = useRef({ startedAt: 0, lastAudioAt: 0, lastSoundAt: 0, inferenceAt: 0 });
+  const callbacks = useRef(events);
+  useLayoutEffect(() => { callbacks.current = events; }, [events]);
   useEffect(() => { scores.current = locationScores; }, [locationScores]);
 
   const publish = useCallback(() => {
@@ -80,6 +88,7 @@ export function useBirdListener(locationScores: Float32Array | null) {
     level.set(0);
     setPauseReason(reason);
     setStatus('idle');
+    callbacks.current.onStopped?.();
     const cleanup = async () => {
       try {
         const r = recorder.current;
@@ -149,6 +158,7 @@ export function useBirdListener(locationScores: Float32Array | null) {
           firstHeard: prev?.firstHeard ?? now, lastHeard: now,
         });
       }
+      callbacks.current.onMatches?.(accepted, now);
       setStatus('listening');
       publish();
       if (isNew) {
@@ -164,11 +174,11 @@ export function useBirdListener(locationScores: Float32Array | null) {
   }, [fail, publish]);
 
   const start = useCallback(async () => {
-    if (active.current) return;
+    if (active.current) return true;
     if (starting.current || busy.current) {
       setError('Audio is still finishing. Wait a moment, then try again.');
       setStatus('error');
-      return;
+      return false;
     }
     starting.current = true;
     const token = ++session.current;
@@ -239,6 +249,8 @@ export function useBirdListener(locationScores: Float32Array | null) {
         }
         return;
       }
+      await callbacks.current.onStarted?.();
+      if (token !== session.current) return false;
       await activateKeepAwakeAsync('listening');
       keepAwake.current = true;
       if (token === session.current) setStatus('warming');
@@ -246,8 +258,10 @@ export function useBirdListener(locationScores: Float32Array | null) {
         keepAwake.current = false;
         await deactivateKeepAwake('listening');
       }
+      return token === session.current;
     } catch (e) {
       await fail(e, token);
+      return false;
     } finally {
       starting.current = false;
     }

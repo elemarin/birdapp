@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { AudioDiagnostics as Diagnostics } from '@/hooks/useBirdListener';
 import type { useDiagnosticClip } from '@/hooks/useDiagnosticClip';
 import { colors } from '@/theme';
+import { useTranslation } from '@/i18n';
 
 type Props = {
   diagnostics: Diagnostics;
@@ -15,37 +16,38 @@ type Props = {
 };
 
 const healthText = {
-  waiting: 'Waiting for microphone audio',
-  receiving: 'Receiving microphone audio',
-  quiet: 'Input is near silent - check the microphone',
-  stalled: 'No audio buffers - microphone stream stalled',
-};
+  waiting: 'micWaiting',
+  receiving: 'micReceiving',
+  quiet: 'micQuiet',
+  stalled: 'micStalled',
+} as const;
 
 export function AudioDiagnostics({ diagnostics: d, listening, starting, now, clip }: Props) {
+  const { t, locale, birdName, errorText } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const candidate = d.strongest;
-  const reason = candidate?.reason === 'confidence' ? 'below the 50% detection threshold'
-    : candidate?.reason === 'location' ? 'excluded by the location filter' : 'passed detection filters';
-  const health = starting ? 'Getting the microphone ready'
-    : listening ? healthText[d.health] : 'Microphone stopped';
+  const reason = t(candidate?.reason === 'confidence' ? 'belowThreshold'
+    : candidate?.reason === 'location' ? 'filtered' : 'accepted');
+  const health = starting ? t('micReady')
+    : listening ? t(healthText[d.health]) : t('micStopped');
   const warning = listening && (d.health === 'quiet' || d.health === 'stalled' || d.inferenceStalled);
   const values = Array.from({ length: 30 }, (_, i) => d.history[i - (30 - d.history.length)] ?? 0);
   return (
     <View style={styles.card}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Audio check"
-        accessibilityHint={expanded ? 'Hide microphone diagnostics and clip controls' : 'Show microphone diagnostics and clip controls'}
+        accessibilityLabel={t('audioCheck')}
+        accessibilityHint={t(expanded ? 'hideDebug' : 'showDebug')}
         accessibilityState={{ expanded }}
         onPress={() => setExpanded((value) => !value)}
         style={styles.header}
       >
         <View style={styles.headerIcon}><Ionicons name="options-outline" size={20} color={colors.accent} /></View>
         <View style={styles.headerText}>
-          <Text style={styles.title}>Audio check</Text>
+          <Text style={styles.title}>{t('audioCheck')}</Text>
           <Text style={[styles.note, warning && styles.warning]}>
-            {d.inferenceStalled && listening ? 'BirdNET check delayed' : health}
-            {clip.playing ? ' · Replaying clip' : ''}
+            {d.inferenceStalled && listening ? t('modelDelayed') : health}
+            {clip.playing ? ` · ${t('replaying')}` : ''}
           </Text>
         </View>
         <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.muted} />
@@ -54,48 +56,48 @@ export function AudioDiagnostics({ diagnostics: d, listening, starting, now, cli
       <View
         style={styles.meter}
         accessible
-        accessibilityLabel={`Recent microphone input, ${d.db.toFixed(0)} decibels relative to full scale`}
+        accessibilityLabel={t('recentInput', { db: d.db.toFixed(0) })}
       >
         {values.map((value, i) => (
           <View key={i} style={[styles.bar, { height: 2 + value * 38, opacity: listening ? 1 : 0.4 }]} />
         ))}
       </View>
       <Text style={styles.body}>
-        {d.db.toFixed(0)} dBFS · Peak {(d.peak * 100).toFixed(1)}% · {(d.samples / 48000).toFixed(1)}s received
+        {d.db.toFixed(0)} dBFS · {(d.peak * 100).toFixed(1)}% · {t('received', { seconds: (d.samples / 48000).toFixed(1) })}
       </Text>
       <Text style={styles.note}>
-        {d.sampleRate ? `${d.sampleRate.toLocaleString()} Hz input, analyzed at 48,000 Hz. ` : ''}
-        Bars show measured volume, not a timer. -100 dBFS is silence.
+        {d.sampleRate ? `${t('inputRate', { rate: d.sampleRate.toLocaleString(locale) })} ` : ''}
+        {t('meterHint')}
       </Text>
       <Text style={styles.body}>
-        BirdNET: {d.checks} completed {d.checks === 1 ? 'check' : 'checks'}
-        {d.lastCheckAt ? ` · ${Math.max(0, Math.floor((now - d.lastCheckAt) / 1000))}s ago · ${d.inferenceMs} ms` : ''}
+        BirdNET: {t('checks', { count: d.checks })}
+        {d.lastCheckAt ? ` · ${t('ago', { seconds: Math.max(0, Math.floor((now - d.lastCheckAt) / 1000)) })} · ${d.inferenceMs} ms` : ''}
       </Text>
       {listening && d.inferenceStalled && (
-        <Text style={styles.warning}>BirdNET has not finished its current check for over 5 seconds.</Text>
+        <Text style={styles.warning}>{t('modelDelayed')}</Text>
       )}
       {candidate ? (
         <Text style={styles.note}>
-          Strongest bird candidate: {candidate.species.common} ({(candidate.confidence * 100).toFixed(1)}%) - {reason}.
-          {candidate.reason !== 'accepted' ? ' This is not a detection.' : ''}
+          {t('strongest')}: {birdName(candidate.species)} ({(candidate.confidence * 100).toFixed(1)}%) - {reason}.
+          {candidate.reason !== 'accepted' ? ` ${t('notDetection')}` : ''}
         </Text>
       ) : (
-        <Text style={styles.note}>A check needs 3 seconds of audio. No result is not proof of silence.</Text>
+        <Text style={styles.note}>{t('checkNeedsAudio')}</Text>
       )}
-      <Text style={styles.title}>Diagnostic clip</Text>
+      <Text style={styles.title}>{t('diagnosticClip')}</Text>
       <Text style={styles.note}>
-        Save the latest 3 seconds fed to BirdNET, without volume boost. One clip stays on this device until replaced or deleted. No upload.
+        {t('clipHint')}
       </Text>
-      {clip.savedAt !== null && <Text style={styles.body}>3s WAV · Saved {new Date(clip.savedAt).toLocaleTimeString()}</Text>}
+      {clip.savedAt !== null && <Text style={styles.body}>{t('clipSaved', { time: new Date(clip.savedAt).toLocaleTimeString(locale) })}</Text>}
       <View style={styles.actions}>
-        <Action label={clip.savedAt === null ? 'Save last 3s' : 'Replace clip'} disabled={starting || clip.busy || d.samples < 144000} onPress={clip.save} />
-        <Action label={clip.playing ? 'Stop replay' : 'Replay'} disabled={starting || clip.busy || clip.savedAt === null} onPress={clip.playing ? clip.stopReplay : clip.play} />
-        <Action label="Delete" disabled={starting || clip.busy || clip.savedAt === null} onPress={clip.remove} />
+        <Action label={t(clip.savedAt === null ? 'saveClip' : 'replaceClip')} disabled={starting || clip.busy || d.samples < 144000} onPress={clip.save} />
+        <Action label={t(clip.playing ? 'stopReplay' : 'replay')} disabled={starting || clip.busy || clip.savedAt === null} onPress={clip.playing ? clip.stopReplay : clip.play} />
+        <Action label={t('delete')} disabled={starting || clip.busy || clip.savedAt === null} onPress={clip.remove} />
       </View>
-      <Text style={styles.note}>Replay stops listening so the app does not hear itself.</Text>
-      {clip.error && <Text style={styles.warning}>{clip.error}</Text>}
+      <Text style={styles.note}>{t('replayHint')}</Text>
+      {clip.error && <Text style={styles.warning}>{errorText(clip.error)}</Text>}
       </View>}
-      {!expanded && clip.error && <Text style={styles.warning}>{clip.error}</Text>}
+      {!expanded && clip.error && <Text style={styles.warning}>{errorText(clip.error)}</Text>}
     </View>
   );
 }

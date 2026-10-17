@@ -10,12 +10,14 @@ import Animated, {
 
 import type { Status } from '@/hooks/useBirdListener';
 import { colors } from '@/theme';
+import { useTranslation } from '@/i18n';
 
 const SIZE = 56;
 
-type Props = { status: Status; level: SharedValue<number>; onPress: () => void; disabled?: boolean };
+type Props = { status: Status; level: SharedValue<number>; onPress: () => void; disabled?: boolean; label?: string };
 
-export function ListenButton({ status, level, onPress, disabled }: Props) {
+export function ListenButton({ status, level, onPress, disabled, label }: Props) {
+  const { t } = useTranslation();
   const on = status === 'warming' || status === 'listening';
   const smooth = useDerivedValue(() => withTiming(level.value, { duration: 120 }));
 
@@ -36,7 +38,7 @@ export function ListenButton({ status, level, onPress, disabled }: Props) {
         onPress={onPress}
         disabled={status === 'starting' || disabled}
         accessibilityRole="button"
-        accessibilityLabel={on ? 'Stop listening' : 'Start listening'}
+        accessibilityLabel={label ?? (on ? t('end') : t('start'))}
         accessibilityState={{ disabled: status === 'starting' || !!disabled }}
         style={({ pressed }) => [styles.shadow, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}
       >
