@@ -4,6 +4,14 @@ Identifies birds by their song, on-device and offline.
 
 The app listens in 3-second windows and gets a new prediction every second. The BirdNET location model narrows results to the species expected at your GPS location and week.
 
+## Screenshots
+
+Android emulator, Spanish interface, and a test GPS location.
+
+| Listen | Session history | Session summary |
+| --- | --- | --- |
+| <img src="docs/screenshots/listen.png" alt="Listening screen with microphone, audio diagnostics, and bottom navigation" width="250"> | <img src="docs/screenshots/history.png" alt="Saved listening sessions grouped by date" width="250"> | <img src="docs/screenshots/session-summary.png" alt="Session summary with bird encounters, listening time, and an offline GPS trace" width="250"> |
+
 ## Sessions, history, and profile
 
 The bottom tabs are **Listen**, **History**, and **Profile**. Start a session with the microphone. Up to three recent bird bubbles appear around it; tap one for details. Stop the microphone to end the session. Sessions with encounters open a summary; empty sessions end without adding a history entry.
@@ -48,7 +56,7 @@ The generated project's default release signing uses the development key. This i
 
 ## Check the microphone
 
-Start listening and expand **Audio check** below **Your birds**. It starts collapsed; its summary still shows microphone problems and delayed model checks.
+Start listening and expand **Audio check** on the **Listen** tab. It starts collapsed; its summary still shows microphone problems and delayed model checks.
 
 On first use, allow microphone access and wait for the system dialog to close. Recording starts only after Birdsong returns to the foreground. Leaving the app during recording still pauses it; permission dialogs while idle do not mark listening as paused.
 
